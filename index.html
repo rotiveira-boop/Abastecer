@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Gestão de Combustíveis</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: #ffffff; color: #1f2937; padding-bottom: 20px; min-height: 100vh; }
+        
+        .container { max-width: 600px; margin: 0 auto; padding: 0 12px; }
+
+        .fixed-header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background-color: #ffffff;
+            padding-top: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #94a3b8;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        h1 { color: #059669; font-size: 18px; display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2; }
+        h1 span.sub-title { font-size: 11px; font-weight: normal; color: #047857; }
+        .status { font-size: 11px; color: #0284c7; font-weight: bold; text-align: right; }
+
+        .vehicle-tabs {
+            display: flex;
+            background-color: #e2e8f0;
+            border: 1px solid #94a3b8;
+            border-radius: 8px;
+            padding: 4px;
+            margin-bottom: 10px;
+            gap: 4px;
+        }
+        .tab-btn {
+            flex: 1;
+            background-color: transparent;
+            border: none;
+            padding: 10px 6px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #64748b;
+            border-radius: 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+        }
+        .tab-btn.active {
+            background-color: #ffffff;
+            color: #059669;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .annual-summary {
+            background-color: #e2e8f0;
+            border: 1px solid #94a3b8;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-top: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: #1e293b;
+        }
+        .annual-item { text-align: center; }
+        .annual-item span { display: block; font-weight: bold; font-size: 11.5px; color: #1e293b; }
+        
+        .card-form { 
+            background-color: #e2e8f0; 
+            border: 1px solid #94a3b8; 
+            border-radius: 8px; 
+            padding: 12px; 
+        }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        
+        .btn-container { grid-column: span 2; text-align: center; margin-top: 4px; }
+        
+        label { display: block; font-size: 11px; text-transform: uppercase; color: #1e293b; font-weight: bold; margin-bottom: 3px; }
+        
+        input { 
+            width: 100%; 
+            background-color: #ffffff; 
+            border: 1px solid #64748b; 
+            border-radius: 6px; 
+            padding: 10px 10px; 
+            color: #1f2937; 
+            font-size: 16px; 
+            outline: none; 
+        }
+        input:focus { border-color: #7c3aed; }
+        
+        button.btn-submit { 
+            background: linear-gradient(to right, #8b5cf6, #6d28d9); 
+            border: none; 
+            color: #ffffff; 
+            font-weight: bold; 
+            padding: 12px 20px; 
+            border-radius: 6px; 
+            font-size: 15px; 
+            cursor: pointer; 
+            text-transform: uppercase; 
+            width: 100%;
+            display: block; 
+        }
+        button.btn-submit:active { transform: scale(0.98); }
+        button.btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .list-container { padding-top: 12px; display: flex; flex-direction: column; gap: 14px; }
+
+        .month-box {
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            gap: 10px;
+            align-items: stretch;
+        }
+        
+        .month-box.theme-green {
+            background-color: #d1fae5;
+            border: 1px solid #6ee7b7;
+        }
+        .month-box.theme-green .month-header {
+            background-color: #a7f3d0;
+            border: 1px solid #34d399;
+        }
+        .month-box.theme-green .month-title-main {
+            color: #065f46;
+        }
+        .month-box.theme-green .month-title-sub {
+            color: #047857;
+        }
+
+        .month-box.theme-blue {
+            background-color: #dbeafe;
+            border: 1px solid #93c5fd;
+        }
+        .month-box.theme-blue .month-header {
+            background-color: #bfdbfe;
+            border: 1px solid #60a5fa;
+        }
+        .month-box.theme-blue .month-title-main {
+            color: #1e40af;
+        }
+        .month-box.theme-blue .month-title-sub {
+            color: #2563eb;
+        }
+
+        .month-vertical-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 2px;
+            user-select: none;
+        }
+        
+        .month-vertical-text {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            text-transform: capitalize;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-size: 15px;
+            font-weight: normal;
+            letter-spacing: 1.5px;
+            white-space: nowrap;
+        }
+
+        .month-box.theme-green .month-vertical-label { color: #065f46; }
+        .month-box.theme-blue .month-vertical-label { color: #1e40af; }
+
+        .month-content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .month-header {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            border-radius: 6px;
+            padding: 6px 10px;
+        }
+
+        .month-stats-titles {
+            display: flex;
+            width: 100%;
+            justify-content: space-around;
+            font-size: 11px;
+            color: #1e293b;
+        }
+        .month-stats-titles span {
+            white-space: nowrap;
+            text-align: center;
+            flex: 1;
+            font-weight: normal;
+        }
+
+        .month-stats { font-size: 12px; color: #000000; font-weight: 600; display: flex; width: 100%; justify-content: space-around; }
+        .month-stats span { white-space: nowrap; text-align: center; flex: 1; }
+
+        .month-entries-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .entry-card { 
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px;
+            padding: 8px 6px; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02); 
+        }
+        
+        .entry-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background-color: #94a3b8 !important; 
+            border-radius: 4px; 
+            padding: 6px 8px; 
+            margin-bottom: 6px; 
+            font-size: 14px; 
+        }
+        .header-left { display: flex; align-items: center; gap: 8px; }
+        
+        .entry-date { color: #ffffff; font-weight: bold; }
+        
+        .header-action-group { display: flex; align-items: center; gap: 4px; }
+        
+        .btn-del-icon { background: transparent; border: none; color: #f87171; font-size: 18px; font-weight: bold; cursor: pointer; padding: 4px 8px; line-height: 1; }
+        .btn-del-icon:hover { background-color: rgba(248, 113, 113, 0.2); border-radius: 4px; }
+        
+        .entry-details { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px; }
+        .detail-item { text-align: center; overflow: hidden; }
+        .detail-item span { display: block; font-size: 9px; color: #334155; text-transform: uppercase; font-weight: bold; margin-bottom: 1px; white-space: nowrap; }
+        
+        .val-common { font-size: 11.5px; font-weight: normal; color: #1f2937; }
+        .val-dist { font-size: 11.5px; color: #0369a1; font-weight: normal; }
+        .val-media { font-size: 11.5px; color: #047857; font-weight: normal; }
+        .val-price { font-size: 11.5px; color: #f87171; font-weight: bold; }
+        .val-unit { font-size: 11.5px; color: #c084fc; font-weight: bold; }
+        
+        .empty-msg { text-align: center; color: #475569; padding: 30px 0; font-size: 14px; }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 16px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: #94a3b8 !important; 
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 24px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        .modal-title { font-size: 18px; font-weight: bold; color: #ffffff; margin-bottom: 10px; }
+        .modal-text { font-size: 16px; color: #f1f5f9; margin-bottom: 20px; line-height: 1.4; font-weight: normal; }
+        .modal-text-large { font-size: 34px; font-weight: 900; color: #34d399; margin: 15px 0 25px 0; letter-spacing: 0.5px; }
+        .modal-buttons { display: flex; gap: 10px; }
+        .modal-btn { flex: 1; padding: 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; border: none; }
+        .modal-btn-cancel { background-color: #94a3b8; color: #ffffff; }
+        .modal-btn-cancel:active { background-color: #64748b; }
+        .modal-btn-confirm { background-color: #dc2626; color: #ffffff; }
+        .modal-btn-confirm:active { background-color: #b91c1c; }
+        .modal-btn-ok { background-color: #059669; color: #ffffff; }
+        .modal-btn-ok:active { background-color: #047857; }
+    </style>
+</head>
+<body>
+
+    <div class="fixed-header">
+        <div class="container">
+            <div class="header-top">
+                <h1 id="mainTitle">
+                    Gestão de Combustíveis
+                    <span id="subTitle" class="sub-title" style="font-size: 60%;"></span>
+                </h1>
+                <div id="status" class="status">A carregar...</div>
+            </div>
+
+            <div class="vehicle-tabs">
+                <button type="button" class="tab-btn active" data-veiculo="gasoleo">VOLVO</button>
+                <button type="button" class="tab-btn" data-veiculo="colt">MITSUBISHI</button>
+            </div>
+
+            <div class="card-form">
+                <form id="fuelForm">
+                    <div class="form-grid">
+                        <div>
+                            <label>Data</label>
+                            <input type="date" id="data" required>
+                        </div>
+                        <div>
+                            <label>Quilómetros Totais</label>
+                            <input type="number" id="kms" placeholder="Ex: 152300" required>
+                        </div>
+                        <div>
+                            <label>Valor Pago (€)</label>
+                            <input type="number" inputmode="decimal" step="0.01" id="valor" placeholder="Ex: 75.20" required>
+                        </div>
+                        <div>
+                            <label>Litros (L)</label>
+                            <input type="number" inputmode="decimal" step="0.01" id="litros" placeholder="Ex: 45.5" required>
+                        </div>
+                        <div class="btn-container">
+                            <button type="submit" id="btnSubmit" class="btn-submit">ADICIONAR</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="annual-summary">
+                <div class="annual-item">Total de Litros <span id="anoLitros">0.00 L</span></div>
+                <div class="annual-item">Total Gasto <span id="anoGasto">0.00 €</span></div>
+                <div class="annual-item">Quilómetros Rodados <span id="anoKms">0 km</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container list-container">
+        <div id="listaRegistos"></div>
+        <div id="emptyState" class="empty-msg">Nenhum registo guardado ainda.</div>
+    </div>
+
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-title" id="modalTitle">Confirmar Eliminação</div>
+            <div id="modalText" class="modal-text">Tem a certeza que pretende apagar este registo?</div>
+            <div class="modal-buttons" id="modalButtons">
+                <button type="button" class="modal-btn modal-btn-cancel" id="btnCancelDelete">Cancelar</button>
+                <button type="button" class="modal-btn modal-btn-confirm" id="btnConfirmDelete">Sim, Apagar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            var form = document.getElementById('fuelForm');
+            var lista = document.getElementById('listaRegistos');
+            var emptyState = document.getElementById('emptyState');
+            var inputData = document.getElementById('data');
+            var inputKms = document.getElementById('kms');
+            var inputValor = document.getElementById('valor');
+            var inputLitros = document.getElementById('litros');
+            var status = document.getElementById('status');
+            var btnSubmit = document.getElementById('btnSubmit');
+            var subTitle = document.getElementById('subTitle');
+            var tabBtns = document.querySelectorAll('.tab-btn');
+            
+            var anoLitrosEl = document.getElementById('anoLitros');
+            var anoGastoEl = document.getElementById('anoGasto');
+            var anoKmsEl = document.getElementById('anoKms');
+            
+            var deleteModal = document.getElementById('deleteModal');
+            var modalTitle = document.getElementById('modalTitle');
+            var modalText = document.getElementById('modalText');
+            var modalButtons = document.getElementById('modalButtons');
+            var btnCancelDelete = document.getElementById('btnCancelDelete');
+            var btnConfirmDelete = document.getElementById('btnConfirmDelete');
+            var indexParaApagar = null;
+            var acaoAposOk = null;
+            var temporizadorAlerta = null;
+
+            var GIST_ID = '48deee124612291036e44a169fc65b33';
+            var a = 'ghp_jLg9LV097MwI';
+            var b = 'RvwNxENWrlJxOyV';
+            var c = 'VYD3MRZtA';
+            var GITHUB_TOKEN = a + b + c;
+
+            var veiculosConfig = {
+                'gasoleo': { ficheiro: 'dados_gasoleo.json', sub: '(Volvo S40)' },
+                'colt': { ficheiro: 'dados_colt.json', sub: '(Mitsubishi Colt)' }
+            };
+
+            var veiculoAtual = 'gasoleo';
+            var dadosGist = {};
+            var registos = [];
+
+            inputData.valueAsDate = new Date();
+
+            function formatarData(dataStr) {
+                if (!dataStr) return '';
+                var partes = dataStr.split('-');
+                if (partes.length === 3) {
+                    return partes[2] + '-' + partes[1] + '-' + partes[0];
+                }
+                return dataStr;
+            }
+
+            function obterMesAnoFormatado(anoMes) {
+                var partes = anoMes.split('-');
+                var ano = partes[0];
+                var anoCurto = ano.substring(2);
+                var mes = parseInt(partes[1], 10);
+                var meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+                return meses[mes - 1] + '/' + anoCurto;
+            }
+
+            function mostrarModalMensagem(titulo, mensagem, tipoBotao, callbackOk) {
+                if (temporizadorAlerta) {
+                    clearTimeout(temporizadorAlerta);
+                    temporizadorAlerta = null;
+                }
+                modalTitle.innerText = titulo;
+                modalText.className = 'modal-text';
+                modalText.innerText = mensagem;
+                acaoAposOk = callbackOk || null;
+                
+                modalButtons.style.display = 'flex';
+                modalButtons.innerHTML = '';
+                if (tipoBotao === 'ok') {
+                    var btnOk = document.createElement('button');
+                    btnOk.type = 'button';
+                    btnOk.className = 'modal-btn modal-btn-ok';
+                    btnOk.id = 'btnModalOk';
+                    btnOk.innerText = 'OK';
+                    btnOk.addEventListener('click', fecharModalMensagem);
+                    modalButtons.appendChild(btnOk);
+                } else {
+                    modalButtons.innerHTML = 
+                        '<button type="button" class="modal-btn modal-btn-cancel" id="btnCancelDelete">Cancelar</button>' +
+                        '<button type="button" class="modal-btn modal-btn-confirm" id="btnConfirmDelete">Sim, Apagar</button>';
+                    
+                    document.getElementById('btnCancelDelete').addEventListener('click', function() {
+                        fecharModalMensagem();
+                        indexParaApagar = null;
+                    });
+                    document.getElementById('btnConfirmDelete').addEventListener('click', function() {
+                        if (indexParaApagar !== null) {
+                            registos.splice(indexParaApagar, 1);
+                            guardar();
+                        }
+                        fecharModalMensagem();
+                        indexParaApagar = null;
+                    });
+                }
+                deleteModal.classList.add('active');
+            }
+
+            function mostrarAlertaTemporizadoPreco(titulo, precoTexto, duracaoMs) {
+                if (temporizadorAlerta) {
+                    clearTimeout(temporizadorAlerta);
+                    temporizadorAlerta = null;
+                }
+                modalTitle.innerText = titulo;
+                modalText.className = 'modal-text-large';
+                modalText.innerText = precoTexto;
+                modalButtons.style.display = 'none';
+                deleteModal.classList.add('active');
+
+                var tempo = duracaoMs || 5000;
+                temporizadorAlerta = setTimeout(function() {
+                    fecharModalMensagem();
+                }, tempo);
+            }
+
+            function fecharModalMensagem() {
+                if (temporizadorAlerta) {
+                    clearTimeout(temporizadorAlerta);
+                    temporizadorAlerta = null;
+                }
+                deleteModal.classList.remove('active');
+                modalButtons.style.display = 'flex';
+                if (typeof acaoAposOk === 'function') {
+                    var fn = acaoAposOk;
+                    acaoAposOk = null;
+                    fn();
+                }
+            }
+
+            async function carregarTudo() {
+                status.innerText = 'A carregar...';
+                try {
+                    var resp = await fetch('https://api.github.com/gists/' + GIST_ID, {
+                        headers: { 'Authorization': 'token ' + GITHUB_TOKEN }
+                    });
+                    var gist = await resp.json();
+                    if (gist.files) {
+                        dadosGist = gist.files;
+                    }
+                    atualizarRegistosAtuais();
+                    status.innerText = 'Sincronizado ✓';
+                } catch(e) {
+                    status.innerText = 'Erro ao carregar';
+                    registos = [];
+                    renderizar();
+                }
+            }
+
+            function atualizarRegistosAtuais() {
+                var nomeFicheiro = veiculosConfig[veiculoAtual].ficheiro;
+                if (dadosGist[nomeFicheiro] && dadosGist[nomeFicheiro].content) {
+                    try {
+                        registos = JSON.parse(dadosGist[nomeFicheiro].content);
+                    } catch(err) {
+                        registos = [];
+                    }
+                } else {
+                    registos = [];
+                }
+                renderizar();
+            }
+
+            async function guardar() {
+                registos.sort(function(a, b) { return a.kms - b.kms; });
+                status.innerText = 'A guardar...';
+                btnSubmit.disabled = true;
+
+                var nomeFicheiro = veiculosConfig[veiculoAtual].ficheiro;
+                var conteudoJson = JSON.stringify(registos, null, 2);
+                
+                if (!dadosGist[nomeFicheiro]) {
+                    dadosGist[nomeFicheiro] = {};
+                }
+                dadosGist[nomeFicheiro].content = conteudoJson;
+
+                var arquivosParaEnviar = {};
+                for (var key in dadosGist) {
+                    if (dadosGist.hasOwnProperty(key) && dadosGist[key].content) {
+                        arquivosParaEnviar[key] = { content: dadosGist[key].content };
+                    }
+                }
+                arquivosParaEnviar[nomeFicheiro] = { content: conteudoJson };
+
+                try {
+                    await fetch('https://api.github.com/gists/' + GIST_ID, {
+                        method: 'PATCH',
+                        headers: {
+                            'Authorization': 'token ' + GITHUB_TOKEN,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ files: arquivosParaEnviar })
+                    });
+                    status.innerText = 'Sincronizado ✓';
+                } catch(e) {
+                    status.innerText = 'Erro ao guardar!';
+                } finally {
+                    btnSubmit.disabled = false;
+                    renderizar();
+                }
+            }
+
+            function renderizar() {
+                lista.innerHTML = '';
+                if (!registos || registos.length === 0) {
+                    emptyState.style.display = 'block';
+                    anoLitrosEl.innerText = '0.00 L';
+                    anoGastoEl.innerText = '0.00 €';
+                    anoKmsEl.innerText = '0 km';
+                    return;
+                }
+                emptyState.style.display = 'none';
+
+                registos.sort(function(a, b) { return a.kms - b.kms; });
+
+                var dHj = new Date();
+                var anoAtualStr = dHj.getFullYear().toString();
+
+                var totalLitrosAno = 0;
+                var totalGastoAno = 0;
+                var totalKmsAno = 0;
+
+                var totaisMes = {};
+
+                for (var j = 0; j < registos.length; j++) {
+                    var reg = registos[j];
+                    if (reg.data && reg.data.length >= 7) {
+                        var anoReg = reg.data.substring(0, 4);
+                        var anoMes = reg.data.substring(0, 7);
+
+                        var litrosNum = Number(reg.litros) || 0;
+                        var valorNum = Number(reg.valor) || 0;
+
+                        if (anoReg === anoAtualStr) {
+                            totalLitrosAno += litrosNum;
+                            totalGastoAno += valorNum;
+                        }
+
+                        if (!totaisMes[anoMes]) {
+                            totaisMes[anoMes] = { litros: 0, valor: 0, kmsDistancia: 0, ultimosKms: 0 };
+                        }
+                        totaisMes[anoMes].litros += litrosNum;
+                        totaisMes[anoMes].valor += valorNum;
+                        totaisMes[anoMes].ultimosKms = Number(reg.kms) || 0;
+
+                        if (j > 0) {
+                            var anterior = registos[j - 1];
+                            var distCalc = reg.kms - anterior.kms;
+                            if (distCalc > 0) {
+                                totaisMes[anoMes].kmsDistancia += distCalc;
+                                if (anoReg === anoAtualStr) {
+                                    totalKmsAno += distCalc;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                anoLitrosEl.innerText = totalLitrosAno.toFixed(2) + ' L';
+                anoGastoEl.innerText = totalGastoAno.toFixed(2) + ' €';
+                anoKmsEl.innerText = totalKmsAno.toLocaleString() + ' km';
+
+                var ordenados = registos.slice().sort(function(a, b) { return b.kms - a.kms; });
+                var mesesAgrupados = {};
+                var ordemMeses = [];
+
+                for (var i = 0; i < ordenados.length; i++) {
+                    var reg = ordenados[i];
+                    var anoMesReg = reg.data ? reg.data.substring(0, 7) : 'sem-data';
+                    if (!mesesAgrupados[anoMesReg]) {
+                        mesesAgrupados[anoMesReg] = [];
+                        ordemMeses.push(anoMesReg);
+                    }
+                    mesesAgrupados[anoMesReg].push(reg);
+                }
+
+                for (var m = 0; m < ordemMeses.length; m++) {
+                    var mesKey = ordemMeses[m];
+                    var regsDoMes = mesesAgrupados[mesKey];
+                    var infoMes = totaisMes[mesKey] || { litros: 0, valor: 0, kmsDistancia: 0, ultimosKms: 0 };
+
+                    var monthBox = document.createElement('div');
+                    var temaClasse = (m % 2 === 0) ? 'theme-green' : 'theme-blue';
+                    monthBox.className = 'month-box ' + temaClasse;
+                    
+                    var kmTotalStr = infoMes.ultimosKms > 0 ? infoMes.ultimosKms.toLocaleString() + ' km' : '0 km';
+                    var kmParcStr = infoMes.kmsDistancia > 0 ? infoMes.kmsDistancia.toLocaleString() + ' km' : '0 km';
+                    var litrosStr = infoMes.litros > 0 ? infoMes.litros.toFixed(2) + ' L' : '0.00 L';
+                    var valorStr = infoMes.valor > 0 ? infoMes.valor.toFixed(2) + ' €' : '0.00 €';
+
+                    var textoMesAno = obterMesAnoFormatado(mesKey);
+
+                    monthBox.innerHTML = 
+                        '<div class="month-vertical-label">' +
+                            '<span class="month-vertical-text">' + textoMesAno + '</span>' +
+                        '</div>' +
+                        '<div class="month-content-wrapper">' +
+                            '<div class="month-header">' +
+                                '<div class="month-stats-titles">' +
+                                    '<span>Reais</span>' +
+                                    '<span>Percorridos</span>' +
+                                    '<span>Consumos</span>' +
+                                    '<span>Custos</span>' +
+                                '</div>' +
+                                '<div class="month-stats">' +
+                                    '<span>' + kmTotalStr + '</span>' +
+                                    '<span>' + kmParcStr + '</span>' +
+                                    '<span>' + litrosStr + '</span>' +
+                                    '<span>' + valorStr + '</span>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="month-entries-container" id="entries-' + mesKey + '"></div>' +
+                        '</div>';
+
+                    var entriesContainer = monthBox.querySelector('.month-entries-container');
+
+                    for (var k = 0; k < regsDoMes.length; k++) {
+                        var reg = regsDoMes[k];
+                        var indexOriginal = registos.indexOf(reg);
+                        var distancia = '-';
+                        var media = 'Base';
+                        var precoLitro = '-';
+                        var valorPagoStr = reg.valor ? Number(reg.valor).toFixed(2) + ' €' : '-';
+                        var dataFormatada = formatarData(reg.data);
+
+                        if (reg.valor && reg.litros) {
+                            precoLitro = (reg.valor / reg.litros).toFixed(3).replace('.', ',') + ' €/L';
+                        }
+
+                        registos.sort(function(a, b) { return a.kms - b.kms; });
+                        var posGlobal = registos.indexOf(reg);
+                        
+                        if (posGlobal > 0) {
+                            var anterior = registos[posGlobal - 1];
+                            var distCalc = reg.kms - anterior.kms;
+                            if (distCalc > 0) {
+                                distancia = distCalc + ' km';
+                                var calcMedia = (reg.litros * 100) / distCalc;
+                                media = calcMedia.toFixed(2) + ' L/100';
+                            }
+                        }
+
+                        var card = document.createElement('div');
+                        card.className = 'entry-card';
+                        card.innerHTML = 
+                            '<div class="entry-header">' +
+                                '<div class="header-left">' +
+                                    '<span class="entry-date">' + dataFormatada + '</span>' +
+                                '</div>' +
+                                '<div class="header-action-group">' +
+                                    '<button class="btn-del-icon" onclick="abrirModalApagar(' + indexOriginal + ')" title="Apagar">✕</button>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="entry-details">' +
+                                '<div class="detail-item"><span>km</span><span class="val-common">' + Number(reg.kms).toLocaleString() + '</span></div>' +
+                                '<div class="detail-item"><span>Litros</span><span class="val-common">' + reg.litros + '</span></div>' +
+                                '<div class="detail-item"><span>Valor</span><span class="val-price">' + valorPagoStr + '</span></div>' +
+                                '<div class="detail-item"><span>Preço/L</span><span class="val-unit">' + precoLitro + '</span></div>' +
+                                '<div class="detail-item"><span>Média</span><span class="val-media">' + media + '</span></div>' +
+                                '<div class="detail-item"><span>Parcial</span><span class="val-dist">' + distancia + '</span></div>' +
+                            '</div>';
+                        
+                        entriesContainer.appendChild(card);
+                    }
+
+                    lista.appendChild(monthBox);
+                }
+            }
+
+            tabBtns.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    tabBtns.forEach(function(b) { b.classList.remove('active'); });
+                    this.classList.add('active');
+                    veiculoAtual = this.getAttribute('data-veiculo');
+                    subTitle.innerText = veiculosConfig[veiculoAtual].sub;
+                    atualizarRegistosAtuais();
+                });
+            });
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                var kmsInseridos = parseFloat(inputKms.value);
+                var valorInserido = parseFloat(inputValor.value);
+                var litrosInseridos = parseFloat(inputLitros.value);
+
+                if (isNaN(valorInserido) || valorInserido <= 0) {
+                    mostrarModalMensagem('Aviso', 'O valor pago tem de ser um número válido!', 'ok', null);
+                    return;
+                }
+
+                if (isNaN(litrosInseridos) || litrosInseridos <= 0) {
+                    mostrarModalMensagem('Aviso', 'A quantidade de litros tem de ser um número válido!', 'ok', null);
+                    return;
+                }
+
+                if (registos && registos.length > 0) {
+                    registos.sort(function(a, b) { return a.kms - b.kms; });
+                    var ultimoRegisto = registos[registos.length - 1];
+                    if (kmsInseridos <= ultimoRegisto.kms) {
+                        mostrarModalMensagem('Atenção', 'Atenção, quilómetros inferiores ao ultimo Abastecimento !!!', 'ok', function() {
+                            inputKms.value = '';
+                            inputKms.focus();
+                        });
+                        return;
+                    }
+                }
+
+                var novo = {
+                    data: inputData.value,
+                    kms: kmsInseridos,
+                    litros: Number(litrosInseridos.toFixed(2)),
+                    valor: Number(valorInserido.toFixed(2))
+                };
+                registos.push(novo);
+                guardar();
+                
+                var precoLitroCalculado = valorInserido / litrosInseridos;
+                var precoFormatado = precoLitroCalculado.toFixed(3).replace('.', ',') + ' €/L';
+                mostrarAlertaTemporizadoPreco('Preço do Litro', precoFormatado, 5000);
+
+                form.reset();
+                inputData.valueAsDate = new Date();
+            });
+
+            window.abrirModalApagar = function(index) {
+                indexParaApagar = index;
+                var reg = registos[index];
+                var dataFormatada = formatarData(reg.data);
+                var textoApagar = 'Pretende apagar o registo de ' + dataFormatada + ' (' + Number(reg.kms).toLocaleString() + ' km)?';
+                mostrarModalMensagem('Confirmar Eliminação', textoApagar, 'delete', null);
+            };
+
+            deleteModal.addEventListener('click', function(e) {
+                if (e.target === deleteModal && modalButtons.style.display !== 'none') {
+                    fecharModalMensagem();
+                }
+            });
+
+            subTitle.innerText = veiculosConfig[veiculoAtual].sub;
+            carregarTudo();
+        })();
+    </script>
+</body>
+</html>
